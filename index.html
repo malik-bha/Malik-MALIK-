@@ -76,83 +76,95 @@
   }
 
   function loadChat() {
-    const chatId = [me, other].sort().join('_');
-    const ref = db.ref('chats/' + chatId);
+  const chatId = [me, other].sort().join('_');
+  const ref = db.ref('chats/' + chatId);
 
-    ref.on('child_added', snap => {
-      const m = snap.val();
-      const key = snap.key;
+  ref.on('child_added', snap => {
+    const m = snap.val();
+    const key = snap.key;
 
-      if (m.from !== me) {
+    if (m.from !== me) {
+      // ✅ صرف تب "seen" کرو جب چیٹ کھلا ہو
+      if (document.getElementById('chat-section').style.display !== 'none') {
         if (m.status === 'sent') ref.child(key).update({ status: 'delivered' });
         if (m.status !== 'seen') ref.child(key).update({ status: 'seen' });
       }
-
-      const div = document.createElement('div');
-      div.className = 'msg ' + (m.from === me ? 'me' : 'other');
-
-      const time = new Date(m.time || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      let ticks = '';
-      if (m.from === me) {
-        if (m.status === 'sent') ticks = '✔';
-        else if (m.status === 'delivered') ticks = '✔✔';
-        else if (m.status === 'seen') { ticks = '✔✔'; div.style.color = '#4fc3f7'; }
-      }
-
-      div.innerHTML = `${m.text}<div style="font-size:12px; text-align:right;">${time} ${ticks}</div>`;
-
-      if (m.from === me) {
-  const setSelection = () => {
-    selectedKey = key;
-    document.getElementById('msg').placeholder = "Enter secret code";
-    document.getElementById('msg').focus();
-    console.log("Message selected:", key);
-  };
-
-  div.addEventListener('mousedown', () => {
-    longPressTimer = setTimeout(setSelection, 600);
-  });
-  div.addEventListener('mouseup', () => clearTimeout(longPressTimer));
-  div.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
-
-  // Mobile touch support
-  div.addEventListener('touchstart', () => {
-    longPressTimer = setTimeout(setSelection, 600);
-  });
-  div.addEventListener('touchend', () => clearTimeout(longPressTimer));
-        
-      }
-
-      document.getElementById('chat-box').appendChild(div);
-      document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
-    });
-  }
-
-  function send() {
-    const input = document.getElementById('msg');
-    const msg = input.value.trim();
-
-    if (!msg) return;
-
-    // delete logic
-    if (msg === "2126" && selectedKey) {
-      const chatId = [me, other].sort().join('_');
-      db.ref('chats/' + chatId + '/' + selectedKey).remove();
-      selectedKey = null;
-      input.placeholder = "Type a message";
-      input.value = '';
-      return;
     }
 
-    const chatId = [me, other].sort().join('_');
-    db.ref('chats/' + chatId).push({
-      from: me,
-      text: msg,
-      time: Date.now(),
-      status: 'sent'
-    });
-    input.value = '';
+    const div = document.createElement('div');
+    div.className = 'msg ' + (m.from === me ? 'me' : 'other');
+    div.setAttribute('data-key', key); // 🔑 میسج کی شناخت
+
+    const time = new Date(m.time || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    let ticks = '';
+    if (m.from === me) {
+      if (m.status === 'sent') ticks = '✔';
+      else if (m.status === 'delivered') ticks = '✔✔';
+      else if (m.status === 'seen') { ticks = '✔✔'; div.style.color = '#4fc3f7'; }
+    }
+
+    div.innerHTML = `${m.text}<div style="font-size:12px; text-align:right;">${time} ${ticks}</div>`;
+
+    if (m.from === me) {
+      const setSelection = () => {
+        selectedKey = key;
+        document.getElementById('msg').placeholder = "Enter secret code";
+        document.getElementById('msg').focus();
+        console.log("Message selected:", key);
+      };
+
+      div.addEventListener('mousedown', () => {
+        longPressTimer = setTimeout(setSelection, 600);
+      });
+      div.addEventListener('mouseup', () => clearTimeout(longPressTimer));
+      div.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
+
+      // Touch support
+      div.addEventListener('touchstart', () => {
+        longPressTimer = setTimeout(setSelection, 600);
+      });
+      div.addEventListener('touchend', () => clearTimeout(longPressTimer));
+    }
+
+    document.getElementById('chat-box').appendChild(div);
+    document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
+  });
+
+  // ✅ جب میسج delete ہو جائے
+  ref.on('child_removed', snap => {
+    const key = snap.key;
+    const msgDiv = document.querySelector(`.msg[data-key="${key}"]`);
+    if (msgDiv) msgDiv.remove();
+  });
+    
   }
+  function send() {
+  const input = document.getElementById('msg');
+  const msg = input.value.trim();
+
+  if (!msg) return;
+
+  // ✅ delete logic
+  if (msg === "2126" && selectedKey) {
+    const chatId = [me, other].sort().join('_');
+    db.ref('chats/' + chatId + '/' + selectedKey).remove();
+    selectedKey = null;
+    input.placeholder = "Type a message";
+    input.value = '';
+    return;
+  }
+
+  const chatId = [me, other].sort().join('_');
+  db.ref('chats/' + chatId).push({
+    from: me,
+    text: msg,
+    time: Date.now(),
+    status: 'sent'
+  });
+  input.value = '';
+  
+  
+}
 </script>
 </body>
 </html>
