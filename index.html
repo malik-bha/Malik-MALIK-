@@ -107,7 +107,7 @@
   const radius = canvas.height / 2;
   ctx.translate(radius, radius);
   
-  let numberPositions = []; // 🔘 نمبر کی پوزیشن محفوظ
+  let numberPositions = [];
   
   function drawClock() {
     drawFace(ctx, radius);
@@ -133,13 +133,13 @@
     ctx.font = radius * 0.15 + "px Arial";
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
-    numberPositions = []; // reset
+    numberPositions = [];
     
     for (let num = 1; num <= 12; num++) {
       const ang = num * Math.PI / 6;
       const x = Math.cos(ang - Math.PI / 2) * radius * 0.85;
       const y = Math.sin(ang - Math.PI / 2) * radius * 0.85;
-      numberPositions.push({ num, x, y }); // 🔘 پوزیشن محفوظ
+      numberPositions.push({ num, x, y });
       ctx.fillText(num.toString(), x, y);
     }
   }
@@ -173,17 +173,16 @@
   setInterval(drawClock, 1000);
   
   function updateDate() {
-  const dateElement = document.getElementById("date");
-  const now = new Date();
-  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  const formattedDate = now.toLocaleDateString('ur-PK', options);
-  dateElement.innerText = formattedDate;
-}
-
-updateDate(); // فوراً کال کرو
-setInterval(updateDate, 60000); // ہر منٹ میں اپڈیٹ کرو
+    const dateElement = document.getElementById("date");
+    const now = new Date();
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const formattedDate = now.toLocaleDateString('ur-PK', options);
+    dateElement.innerText = formattedDate;
+  }
   
-  // 🔒 Click sequence logic
+  updateDate();
+  setInterval(updateDate, 60000);
+  
   let clickSequence = "";
   canvas.onclick = function(e) {
     const rect = canvas.getBoundingClientRect();
@@ -214,20 +213,44 @@ setInterval(updateDate, 60000); // ہر منٹ میں اپڈیٹ کرو
   });
   
   function saveTimes() {
-    document.getElementById("fajrTime").innerText = document.getElementById("fajrInput").value;
-    document.getElementById("zuhrTime").innerText = document.getElementById("zuhrInput").value;
-    document.getElementById("asrTime").innerText = document.getElementById("asrInput").value;
-    document.getElementById("maghribTime").innerText = document.getElementById("maghribInput").value;
-    document.getElementById("ishaTime").innerText = document.getElementById("ishaInput").value;
+    const times = {
+      fajr: document.getElementById("fajrInput").value,
+      zuhr: document.getElementById("zuhrInput").value,
+      asr: document.getElementById("asrInput").value,
+      maghrib: document.getElementById("maghribInput").value,
+      isha: document.getElementById("ishaInput").value
+    };
+    
+    localStorage.setItem("prayerTimes", JSON.stringify(times)); // ✅ محفوظ
+    
+    document.getElementById("fajrTime").innerText = times.fajr;
+    document.getElementById("zuhrTime").innerText = times.zuhr;
+    document.getElementById("asrTime").innerText = times.asr;
+    document.getElementById("maghribTime").innerText = times.maghrib;
+    document.getElementById("ishaTime").innerText = times.isha;
+    
     modal.style.display = "none";
   }
   
-  // بند کرنے کے لیے باہر کلک کرنے پر
+  // 🔁 صفحہ ری لوڈ ہونے پر وقت لوڈ کرو
+  window.addEventListener("load", () => {
+    const stored = localStorage.getItem("prayerTimes");
+    if (stored) {
+      const times = JSON.parse(stored);
+      document.getElementById("fajrTime").innerText = times.fajr || "";
+      document.getElementById("zuhrTime").innerText = times.zuhr || "";
+      document.getElementById("asrTime").innerText = times.asr || "";
+      document.getElementById("maghribTime").innerText = times.maghrib || "";
+      document.getElementById("ishaTime").innerText = times.isha || "";
+    }
+  });
+  
+  // بند کرنے کے لیے باہر کلک پر
   window.onclick = function(event) {
     if (event.target == modal) {
       modal.style.display = "none";
     }
-  }
+  };
 </script>
 
 </body>
