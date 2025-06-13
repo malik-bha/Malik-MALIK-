@@ -1,234 +1,170 @@
-<!DOCTYPE html>
-<html lang="ur" dir="rtl">
+<!DOCTYPE html><html>
 <head>
   <meta charset="UTF-8">
-  <title>نماز کے اوقات</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">
+  <title>Chat</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
   <style>
-    body {
-      font-family: 'Noto Nastaliq Urdu', serif;
-      background-color: #f0f0f0;
-      padding: 20px;
-      text-align: center;
-      overflow: hidden;
-    }
-
-    #clock {
-      width: 220px;
-      height: 220px;
-      margin: auto;
-      display: block;
-    }
-
-    .prayers {
-      margin-top: 20px;
-      font-size: 20px;
-    }
-
-    .prayer {
-      margin-bottom: 8px;
-    }
-
-    #editBtn {
-      margin-top: 20px;
-      font-size: 18px;
-      padding: 6px 14px;
-      cursor: pointer;
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 999;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(0, 0, 0, 0.4);
-      justify-content: center;
-      align-items: center;
-    }
-
-    .modal-content {
-      background-color: white;
-      padding: 20px;
-      border-radius: 10px;
-      text-align: right;
-      width: 300px;
-    }
-
-    .modal-content input {
-      width: 100%;
-      font-size: 16px;
-      margin-bottom: 10px;
-    }
-
-    .modal-content button {
-      font-size: 16px;
-      padding: 6px 12px;
-      cursor: pointer;
-    }
-    
-    #date {
-  font-size: 22px;
-  margin-top: 10px;
-  font-weight: bold;
-      
-    }
+    body { font-family: sans-serif; background: #ece5dd; margin: 0; }
+    #login { padding: 20px; text-align: center; }
+    #chat-section { display: none; }
+    #header { display: flex; align-items: center; padding: 10px; background: #075E54; color: #fff; }
+    #header .name { flex: 1; font-weight: bold; }
+    #header .status { font-size: 12px; }
+    #chat-box { height: 75vh; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; }
+    .msg { max-width: 70%; margin: 5px; padding: 10px; border-radius: 10px; position: relative; }
+    .me { align-self: flex-end; background: #dcf8c6; }
+    .other { align-self: flex-start; background: #fff; }
+    #input-area { display: flex; padding: 10px; background: #fff; position: fixed; bottom: 0; width: 100%; box-sizing: border-box; }
+    #msg { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; }
+    button { margin-left: 10px; padding: 0 20px; border: none; background: #128c7e; color: #fff; border-radius: 20px; }
+    .msg div { font-size: 12px; color: gray; }
   </style>
 </head>
-<body>
-
-<canvas id="clock" width="220" height="220"></canvas>
-<div id="date" style="margin-top: 20px;"></div>
-<div class="prayers" id="prayerTimes">
-  <div class="prayer">🕋 فجر: <span id="fajrTime">---</span></div>
-  <div class="prayer">☀️ ظہر: <span id="zuhrTime">---</span></div>
-  <div class="prayer">🌇 عصر: <span id="asrTime">---</span></div>
-  <div class="prayer">🌆 مغرب: <span id="maghribTime">---</span></div>
-  <div class="prayer">🌃 عشاء: <span id="ishaTime">---</span></div>
-</div>
-
-<button id="editBtn">📝 اوقات تبدیل کریں</button>
-
-<!-- Modal Popup -->
-<div class="modal" id="modal">
-  <div class="modal-content">
-    <label>فجر:</label><input type="time" id="fajrInput">
-    <label>ظہر:</label><input type="time" id="zuhrInput">
-    <label>عصر:</label><input type="time" id="asrInput">
-    <label>مغرب:</label><input type="time" id="maghribInput">
-    <label>عشاء:</label><input type="time" id="ishaInput">
-    <button onclick="saveTimes()">💾 محفوظ کریں</button>
+<body><div id="login">
+  <h2>Enter Your Name</h2>
+  <input id="username" placeholder="Paste your privacy code" />
+  <button onclick="startChat()">Enter</button>
+</div><div id="chat-section">
+  <div id="header">
+    <div class="name" id="chat-name"></div>
+    <div class="status" id="chat-status"></div>
   </div>
-</div>
+  <div id="chat-box"></div>
+  <div id="input-area">
+    <input type="text" id="msg" placeholder="Type a message" />
+    <button onclick="send()">Send</button>
+  </div>
+</div><script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyClb5C0c2JL-D4555yST-mwHBeUE4H2nhY",
+    authDomain: "malik-6f6b3.firebaseapp.com",
+    databaseURL: "https://malik-6f6b3-default-rtdb.firebaseio.com",
+    projectId: "malik-6f6b3",
+    storageBucket: "malik-6f6b3.appspot.com",
+    messagingSenderId: "784331899173",
+    appId: "1:784331899173:web:4cf46dcf1621f40a6f9acc"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-<script>
-  const canvas = document.getElementById("clock");
-  const ctx = canvas.getContext("2d");
-  const radius = canvas.height / 2;
-  ctx.translate(radius, radius);
-  
-  let numberPositions = []; // 🔘 نمبر کی پوزیشن محفوظ
-  
-  function drawClock() {
-    drawFace(ctx, radius);
-    drawNumbers(ctx, radius);
-    drawTime(ctx, radius);
-  }
-  
-  function drawFace(ctx, radius) {
-    ctx.beginPath();
-    ctx.arc(0, 0, radius * 0.95, 0, 2 * Math.PI);
-    ctx.fillStyle = "white";
-    ctx.fill();
-    ctx.strokeStyle = "Black";
-    ctx.lineWidth = radius * 0.02;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(0, 0, radius * 0.06, 0, 2 * Math.PI);
-    ctx.fillStyle = "black";
-    ctx.fill();
-  }
-  
-  function drawNumbers(ctx, radius) {
-    ctx.font = radius * 0.15 + "px Arial";
-    ctx.textBaseline = "middle";
-    ctx.textAlign = "center";
-    numberPositions = []; // reset
-    
-    for (let num = 1; num <= 12; num++) {
-      const ang = num * Math.PI / 6;
-      const x = Math.cos(ang - Math.PI / 2) * radius * 0.85;
-      const y = Math.sin(ang - Math.PI / 2) * radius * 0.85;
-      numberPositions.push({ num, x, y }); // 🔘 پوزیشن محفوظ
-      ctx.fillText(num.toString(), x, y);
+  let me = '', other = '', longPressTimer, selectedKey = null;
+
+  function startChat() {
+    const inputName = document.getElementById('username').value.trim();
+    if (inputName !== "Androide" && inputName !== "HELLO MOTO") {
+      alert("Name must be 'Androide' or 'HELLO MOTO'");
+      return;
     }
-  }
-  
-  function drawTime(ctx, radius) {
-    const now = new Date();
-    let hour = now.getHours();
-    let minute = now.getMinutes();
-    let second = now.getSeconds();
-    hour %= 12;
-    hour = (hour * Math.PI / 6) + (minute * Math.PI / (6 * 60)) + (second * Math.PI / (360 * 60));
-    drawHand(ctx, hour, radius * 0.5, radius * 0.05);
-    minute = (minute * Math.PI / 30) + (second * Math.PI / (30 * 60));
-    drawHand(ctx, minute, radius * 0.65, radius * 0.06);
-    second = second * Math.PI / 30;
-    drawHand(ctx, second, radius * 0.7, radius * 0.02, "red");
-  }
-  
-  function drawHand(ctx, pos, length, width, color = "black") {
-    ctx.beginPath();
-    ctx.lineWidth = width;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = color;
-    ctx.moveTo(0, 0);
-    ctx.rotate(pos);
-    ctx.lineTo(0, -length);
-    ctx.stroke();
-    ctx.rotate(-pos);
-  }
-  
-  setInterval(drawClock, 1000);
-  
-  function updateDate() {
-  const dateElement = document.getElementById("date");
-  const now = new Date();
-  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  const formattedDate = now.toLocaleDateString('ur-PK', options);
-  dateElement.innerText = formattedDate;
-}
 
-updateDate(); // فوراً کال کرو
-setInterval(updateDate, 60000); // ہر منٹ میں اپڈیٹ کرو
-  
-  // 🔒 Click sequence logic
-  let clickSequence = "";
-  canvas.onclick = function(e) {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left - radius;
-    const y = e.clientY - rect.top - radius;
-    
-    for (let i = 0; i < numberPositions.length; i++) {
-      const { num, x: nx, y: ny } = numberPositions[i];
-      const dx = x - nx;
-      const dy = y - ny;
-      if (Math.sqrt(dx * dx + dy * dy) < 15) {
-        clickSequence += num.toString();
-        if (clickSequence.length > 7) clickSequence = clickSequence.slice(-7);
-        if (clickSequence === "2126131") {
-          window.location.href = "chat.html";
-        }
-        break;
+    me = inputName;
+    other = me === "Androide" ? "HELLO MOTO" : "Androide";
+
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('chat-section').style.display = 'block';
+    document.getElementById('chat-name').innerText = 'Chat';
+
+    db.ref('status/' + me).set("online");
+    db.ref('status/' + me).onDisconnect().set("last seen: " + new Date().toLocaleString());
+
+    db.ref('status/' + other).on('value', snap => {
+      const val = snap.val() || "offline";
+      document.getElementById('chat-status').innerText = val;
+    });
+
+    loadChat();
+  }
+
+  function loadChat() {
+  const chatId = [me, other].sort().join('_');
+  const ref = db.ref('chats/' + chatId);
+
+  ref.on('child_added', snap => {
+    const m = snap.val();
+    const key = snap.key;
+
+    if (m.from !== me) {
+      // ✅ صرف تب "seen" کرو جب چیٹ کھلا ہو
+      if (document.getElementById('chat-section').style.display !== 'none') {
+        if (m.status === 'sent') ref.child(key).update({ status: 'delivered' });
+        if (m.status !== 'seen') ref.child(key).update({ status: 'seen' });
       }
     }
-  };
-  
-  // 🕌 نماز وقت محفوظ کرنا
-  const modal = document.getElementById("modal");
-  const editBtn = document.getElementById("editBtn");
-  
-  editBtn.addEventListener("click", () => {
-    modal.style.display = "flex";
-  });
-  
-  function saveTimes() {
-    document.getElementById("fajrTime").innerText = document.getElementById("fajrInput").value;
-    document.getElementById("zuhrTime").innerText = document.getElementById("zuhrInput").value;
-    document.getElementById("asrTime").innerText = document.getElementById("asrInput").value;
-    document.getElementById("maghribTime").innerText = document.getElementById("maghribInput").value;
-    document.getElementById("ishaTime").innerText = document.getElementById("ishaInput").value;
-    modal.style.display = "none";
-  }
-  
-  // بند کرنے کے لیے باہر کلک کرنے پر
-  window.onclick = function(event) {
-    if (event.target == modal) {
-      modal.style.display = "none";
-    }
-  }
-</script>
 
+    const div = document.createElement('div');
+    div.className = 'msg ' + (m.from === me ? 'me' : 'other');
+    div.setAttribute('data-key', key); // 🔑 میسج کی شناخت
+
+    const time = new Date(m.time || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    let ticks = '';
+    if (m.from === me) {
+      if (m.status === 'sent') ticks = '✔';
+      else if (m.status === 'delivered') ticks = '✔✔';
+      else if (m.status === 'seen') { ticks = '✔✔'; div.style.color = '#4fc3f7'; }
+    }
+
+    div.innerHTML = `${m.text}<div style="font-size:12px; text-align:right;">${time} ${ticks}</div>`;
+
+    if (m.from === me) {
+      const setSelection = () => {
+        selectedKey = key;
+        document.getElementById('msg').placeholder = "Enter secret code";
+        document.getElementById('msg').focus();
+        console.log("Message selected:", key);
+      };
+
+      div.addEventListener('mousedown', () => {
+        longPressTimer = setTimeout(setSelection, 600);
+      });
+      div.addEventListener('mouseup', () => clearTimeout(longPressTimer));
+      div.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
+
+      // Touch support
+      div.addEventListener('touchstart', () => {
+        longPressTimer = setTimeout(setSelection, 600);
+      });
+      div.addEventListener('touchend', () => clearTimeout(longPressTimer));
+    }
+
+    document.getElementById('chat-box').appendChild(div);
+    document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
+  });
+
+  // ✅ جب میسج delete ہو جائے
+  ref.on('child_removed', snap => {
+    const key = snap.key;
+    const msgDiv = document.querySelector(`.msg[data-key="${key}"]`);
+    if (msgDiv) msgDiv.remove();
+  });
+    
+  }
+  function send() {
+  const input = document.getElementById('msg');
+  const msg = input.value.trim();
+
+  if (!msg) return;
+
+  // ✅ delete logic
+  if (msg === "2126" && selectedKey) {
+    const chatId = [me, other].sort().join('_');
+    db.ref('chats/' + chatId + '/' + selectedKey).remove();
+    selectedKey = null;
+    input.placeholder = "Type a message";
+    input.value = '';
+    return;
+  }
+
+  const chatId = [me, other].sort().join('_');
+  db.ref('chats/' + chatId).push({
+    from: me,
+    text: msg,
+    time: Date.now(),
+    status: 'sent'
+  });
+  input.value = '';
+  
+  
+}
+</script>
 </body>
-</html
+</html>
