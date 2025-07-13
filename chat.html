@@ -1,9 +1,8 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html>
 <head>
   <meta charset="UTF-8" />
-  <title>WhatsApp Style Chat</title>
-  <script src="="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <title>Chat with File Send</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
   <style>
@@ -22,22 +21,17 @@
   </style>
 </head>
 <body>
-
   <div id="login">
     <h2>Enter Your Code</h2>
-    <input id="myCode" placeholder="e.g. SHOAIB" />
+    <input id="myCode" placeholder="Your ID e.g. SHOAIB" />
     <button onclick="login()">Login</button>
-  </div>
-
-  <div id="contacts-screen">
+  </div>  <div id="contacts-screen">
     <h3>Welcome: <span id="myCodeDisplay"></span></h3>
     <input id="friendCode" placeholder="Add friend's code" />
     <button onclick="addContact()">Add</button>
     <h4>Contacts:</h4>
     <div id="contacts"></div>
-  </div>
-
-  <div id="chat-section">
+  </div>  <div id="chat-section">
     <div id="header">
       <button id="backBtn" onclick="backToContacts()">←</button>
       <div class="name" id="chat-name"></div>
@@ -49,9 +43,7 @@
       <button onclick="document.getElementById('fileInput').click()">📎</button>
       <button onclick="send()">Send</button>
     </div>
-  </div>
-
-<script>
+  </div><script>
 const firebaseConfig = {
   apiKey: "AIzaSyClb5C0c2JL-D4555yST-mwHBeUE4H2nhY",
   authDomain: "malik-6f6b3.firebaseapp.com",
@@ -174,7 +166,5 @@ function send() {
   });
   input.value = '';
 }
-</script>
-
-</body>
+</script></body>
 </html>
