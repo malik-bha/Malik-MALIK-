@@ -1,0 +1,157 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat List</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <style>
+    body { margin: 0; font-family: sans-serif; background: #ece5dd; }
+    header { background: #075E54; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+    header span { font-size: 18px; }
+    #logoutBtn { background: red; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+    #add-friend { padding: 10px; background: white; display: flex; }
+    #add-friend input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ccc; }
+    #add-friend button { margin-left: 10px; padding: 10px 20px; border: none; background: #128c7e; color: white; border-radius: 20px; }
+    .chat-list { padding: 0; list-style: none; margin: 0; }
+    .chat-list li { background: white; padding: 15px; border-bottom: 1px solid #ddd; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .chat-list li:hover { background: #f0f0f0; }
+    .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 10px; }
+    .online { background-color: green; }
+    .offline { background-color: red; }
+    .badge {
+  background: #128c7e;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-left: auto;
+}
+  </style>
+</head>
+<body>
+  <header>
+    <span>ID NAME: <b id="username"></b></span>
+    <button id="logoutBtn" onclick="logout()">Logout</button>
+  </header>  <div id="add-friend">
+    <input type="text" id="friendName" placeholder="Enter friend's name" />
+    <button onclick="addFriend()">Add</button>
+  </div>  <ul class="chat-list" id="chatList"></ul>  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyClb5C0c2JL-D4555yST-mwHBeUE4H2nhY",
+      authDomain: "malik-6f6b3.firebaseapp.com",
+      databaseURL: "https://malik-6f6b3-default-rtdb.firebaseio.com",
+      projectId: "malik-6f6b3",
+      storageBucket: "malik-6f6b3.appspot.com",
+      messagingSenderId: "784331899173",
+      appId: "1:784331899173:web:4cf46dcf1621f40a6f9acc"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const me = localStorage.getItem("chat_name");
+    const pass = localStorage.getItem("chat_pass");
+    if (!me || !pass) location.href = "malik.html";
+
+    document.getElementById("username").innerText = me;
+
+    function logout() {
+      localStorage.removeItem("chat_name");
+      localStorage.removeItem("chat_pass");
+      localStorage.removeItem("chat_with");
+      location.href = "index.html";
+    }
+
+    const listEl = document.getElementById("chatList");
+
+    function renderChatList() {
+      db.ref("friends/" + me).on("value", snap => {
+        listEl.innerHTML = "";
+        const friends = snap.val() || {};
+        const sorted = Object.keys(friends);
+
+        // Sort by last message time
+        let promises = sorted.map(name => {
+          const chatId = [me, name].sort().join("_");
+          return db.ref("chats/" + chatId).limitToLast(1).once("value").then(snap => {
+            let lastTime = 0;
+            snap.forEach(child => {
+              lastTime = child.val().time || 0;
+            });
+            return { name, lastTime };
+          });
+        });
+
+        Promise.all(promises).then(results => {
+          results.sort((a, b) => b.lastTime - a.lastTime);
+
+          results.forEach(({ name }) => {
+            const li = document.createElement("li");
+li.style.display = "flex";
+li.style.justifyContent = "space-between";
+li.style.alignItems = "center";
+
+const statusDot = document.createElement("span");
+statusDot.className = "dot offline";
+db.ref("status/" + name).on("value", s => {
+  statusDot.className = "dot " + (s.val() === "online" ? "online" : "offline");
+});
+
+const label = document.createElement("span");
+label.innerText = name;
+label.style.marginLeft = "10px";
+
+const badge = document.createElement("span");
+badge.className = "badge";
+badge.style.display = "none";
+
+const chatId = [me, name].sort().join("_");
+db.ref("chats/" + chatId).on("value", s => {
+  let unread = 0;
+  s.forEach(child => {
+    const m = child.val();
+    if (m.from === name && m.status !== 'seen') unread++;
+  });
+  if (unread > 0) {
+    badge.innerText = unread;
+    badge.style.display = "inline-block";
+  } else {
+    badge.style.display = "none";
+  }
+});
+
+const row = document.createElement("div");
+row.style.display = "flex";
+row.style.alignItems = "center";
+row.appendChild(statusDot);
+row.appendChild(label);
+
+// ✅ Structure:
+li.appendChild(row); // left side: dot + name
+li.appendChild(badge); // right side: unread badge
+            li.onclick = () => {
+              localStorage.setItem("chat_with", name);
+              location.href = "chat.html";
+            };
+
+            listEl.appendChild(li);
+          });
+        });
+      });
+    }
+
+    function addFriend() {
+      const name = document.getElementById("friendName").value.trim();
+      if (!name || name === me) return alert("Invalid name");
+
+      db.ref("users/" + name).once("value").then(snap => {
+        if (!snap.exists()) return alert("User not found");
+        db.ref("friends/" + me + "/" + name).set(true);
+        db.ref("friends/" + name + "/" + me).set(true);
+        document.getElementById("friendName").value = "";
+      });
+    }
+
+    renderChatList();
+  </script></body>
+</html>

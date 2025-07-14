@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login or Signup</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 0; background: #ece5dd; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .login-box { background: white; padding: 20px; border-radius: 10px; width: 300px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .login-box h2 { margin: 0 0 20px; text-align: center; }
+    .login-box input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; }
+    .login-box button { width: 48%; padding: 10px; background: #128c7e; color: white; border: none; border-radius: 5px; margin: 1%; }
+    .btns { display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+
+  <!-- Login Box HTML -->
+<div class="login-box" id="login-box">
+  <h2>Login or Signup</h2>
+  <input type="text" id="name" placeholder="Name" />
+  <input type="password" id="password" placeholder="Password" />
+  <div class="btns">
+    <button onclick="login()">Login</button>
+    <button onclick="signup()">Signup</button>
+  </div>
+</div>
+
+<!-- Logging... Message -->
+<div class="login-box" id="autologin-box" style="display: none; text-align: center;">
+  <h2>Logging in 3 Seconds..</h2>
+</div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyClb5C0c2JL-D4555yST-mwHBeUE4H2nhY",
+      authDomain: "malik-6f6b3.firebaseapp.com",
+      databaseURL: "https://malik-6f6b3-default-rtdb.firebaseio.com",
+      projectId: "malik-6f6b3",
+      storageBucket: "malik-6f6b3.appspot.com",
+      messagingSenderId: "784331899173",
+      appId: "1:784331899173:web:4cf46dcf1621f40a6f9acc"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // 🔁 Auto redirect if already logged in
+    const savedName = localStorage.getItem("chat_name");
+const savedPass = localStorage.getItem("chat_pass");
+if (savedName && savedPass) {
+  document.getElementById("login-box").style.display = "none";
+  document.getElementById("autologin-box").style.display = "block";
+  
+  db.ref("users/" + savedName).once("value").then(snapshot => {
+    if (snapshot.exists() && snapshot.val().password === savedPass) {
+      setTimeout(() => {
+        location.href = "chatlist.html";
+      }, 1000); // تھوڑا delay تاکہ user کو message نظر آئے
+    } else {
+      document.getElementById("login-box").style.display = "block";
+      document.getElementById("autologin-box").style.display = "none";
+    }
+  });
+}
+
+    function login() {
+      const name = document.getElementById("name").value.trim();
+      const pass = document.getElementById("password").value.trim();
+
+      if (!name || !pass) return alert("Please enter both fields.");
+
+      db.ref("users/" + name).once("value").then(snapshot => {
+        if (snapshot.exists()) {
+          if (snapshot.val().password === pass) {
+            localStorage.setItem("chat_name", name);
+            localStorage.setItem("chat_pass", pass);
+            location.href = "chatlist.html";
+          } else {
+            alert("Incorrect password");
+          }
+        } else {
+          alert("User not found. Please signup.");
+        }
+      });
+    }
+
+    function signup() {
+      const name = document.getElementById("name").value.trim();
+      const pass = document.getElementById("password").value.trim();
+
+      if (!name || !pass) return alert("Please enter both fields.");
+
+      db.ref("users/" + name).once("value").then(snapshot => {
+        if (snapshot.exists()) {
+          alert("User already exists. Please login.");
+        } else {
+          db.ref("users/" + name).set({ password: pass });
+          localStorage.setItem("chat_name", name);
+          localStorage.setItem("chat_pass", pass);
+          alert("Signup successful! Redirecting...");
+          location.href = "chatlist.html";
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>
