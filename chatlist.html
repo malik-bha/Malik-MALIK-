@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Chat List</title>
@@ -16,27 +17,43 @@
     .chat-list { padding: 0; list-style: none; margin: 0; }
     .chat-list li { background: white; padding: 15px; border-bottom: 1px solid #ddd; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     .chat-list li:hover { background: #f0f0f0; }
-    .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 10px; }
+    .dot {
+      height: 10px;
+      width: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      border: 1px solid white;
+    }
     .online { background-color: green; }
     .offline { background-color: red; }
     .badge {
-  background: blue;
-  color: white;
-  padding: 3px 9px;
-  border-radius: 12px;
-  font-size: 13px;
-  margin-left: auto;
-}
+      background: blue;
+      color: white;
+      padding: 3px 9px;
+      border-radius: 12px;
+      font-size: 13px;
+      margin-left: auto;
+    }
   </style>
 </head>
 <body>
   <header>
-    <span>👤  <b id="username"></b></span>
+    <span>👤 <b id="username"></b></span>
     <button id="logoutBtn" onclick="logout()">Logout</button>
-  </header>  <div id="add-friend">
+  </header>
+
+  <!-- ✅ Status Input S
+
+  <!-- ✅ Add Friend -->
+  <div id="add-friend">
     <input type="text" id="friendName" placeholder="Enter friend's name" />
     <button onclick="addFriend()">Add</button>
-  </div>  <ul class="chat-list" id="chatList"></ul>  <script>
+  </div>
+
+  <!-- ✅ Chat List -->
+  <ul class="chat-list" id="chatList"></ul>
+
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyClb5C0c2JL-D4555yST-mwHBeUE4H2nhY",
       authDomain: "malik-6f6b3.firebaseapp.com",
@@ -62,6 +79,26 @@
       location.href = "malik.html";
     }
 
+    function updateStatus() {
+      const msg = document.getElementById("myStatus").value.trim();
+      if (msg) {
+        db.ref("users/" + me + "/status_message").set(msg);
+        alert("✅ Status updated");
+      }
+    }
+
+    function addFriend() {
+      const name = document.getElementById("friendName").value.trim();
+      if (!name || name === me) return alert("Invalid name");
+
+      db.ref("users/" + name).once("value").then(snap => {
+        if (!snap.exists()) return alert("User not found");
+        db.ref("friends/" + me + "/" + name).set(true);
+        db.ref("friends/" + name + "/" + me).set(true);
+        document.getElementById("friendName").value = "";
+      });
+    }
+
     const listEl = document.getElementById("chatList");
 
     function renderChatList() {
@@ -70,7 +107,6 @@
         const friends = snap.val() || {};
         const sorted = Object.keys(friends);
 
-        // Sort by last message time
         let promises = sorted.map(name => {
           const chatId = [me, name].sort().join("_");
           return db.ref("chats/" + chatId).limitToLast(1).once("value").then(snap => {
@@ -87,51 +123,79 @@
 
           results.forEach(({ name }) => {
             const li = document.createElement("li");
-li.style.display = "flex";
-li.style.justifyContent = "space-between";
-li.style.alignItems = "center";
 
-const statusDot = document.createElement("span");
-statusDot.className = "dot offline";
-db.ref("status/" + name).on("value", s => {
-  statusDot.className = "dot " + (s.val() === "online" ? "online" : "offline");
-});
+            // 👤 Icon with dot on top-right
+            const profileContainer = document.createElement("div");
+            profileContainer.style.position = "relative";
+            profileContainer.style.width = "30px";
+            profileContainer.style.height = "30px";
+            profileContainer.style.fontSize = "24px";
 
-const label = document.createElement("span");
-label.innerText = name;
-label.style.marginLeft = "10px";
-label.style.color = "black";
-label.style.fontSize = "18px";
-label.style.fontWeight = "bold";
+            const profileIcon = document.createElement("span");
+            profileIcon.innerText = "👤";
 
-const badge = document.createElement("span");
-badge.className = "badge";
-badge.style.display = "none";
+            const statusDot = document.createElement("span");
+            statusDot.className = "dot offline";
+            statusDot.style.position = "absolute";
+            statusDot.style.top = "0";
+            statusDot.style.right = "0";
 
-const chatId = [me, name].sort().join("_");
-db.ref("chats/" + chatId).on("value", s => {
-  let unread = 0;
-  s.forEach(child => {
-    const m = child.val();
-    if (m.from === name && m.status !== 'seen') unread++;
-  });
-  if (unread > 0) {
-    badge.innerText = unread;
-    badge.style.display = "inline-block";
-  } else {
-    badge.style.display = "none";
-  }
-});
+            db.ref("status/" + name).on("value", s => {
+              statusDot.className = "dot " + (s.val() === "online" ? "online" : "offline");
+            });
 
-const row = document.createElement("div");
-row.style.display = "flex";
-row.style.alignItems = "center";
-row.appendChild(statusDot);
-row.appendChild(label);
+            profileContainer.appendChild(profileIcon);
+            profileContainer.appendChild(statusDot);
 
-// ✅ Structure:
-li.appendChild(row); // left side: dot + name
-li.appendChild(badge); // right side: unread badge
+            // Name and status message
+            const nameEl = document.createElement("div");
+            nameEl.innerText = name;
+            nameEl.style.fontSize = "18px";
+            nameEl.style.fontWeight = "bold";
+            nameEl.style.color = "black";
+            nameEl.style.marginLeft = "10px";
+
+            const statusMsg = document.createElement("div");
+            statusMsg.style.fontSize = "14px";
+            statusMsg.style.color = "gray";
+
+            db.ref("users/" + name + "/status_message").once("value").then(s => {
+              statusMsg.innerText = s.val() || "";
+            });
+
+            const labelBox = document.createElement("div");
+            labelBox.appendChild(nameEl);
+            labelBox.appendChild(statusMsg);
+
+            const row = document.createElement("div");
+            row.style.display = "flex";
+            row.style.alignItems = "center";
+            row.appendChild(profileContainer);
+            row.appendChild(labelBox);
+
+            // Unread badge
+            const badge = document.createElement("span");
+            badge.className = "badge";
+            badge.style.display = "none";
+
+            const chatId = [me, name].sort().join("_");
+            db.ref("chats/" + chatId).on("value", s => {
+              let unread = 0;
+              s.forEach(child => {
+                const m = child.val();
+                if (m.from === name && m.status !== 'seen') unread++;
+              });
+              if (unread > 0) {
+                badge.innerText = unread;
+                badge.style.display = "inline-block";
+              } else {
+                badge.style.display = "none";
+              }
+            });
+
+            li.appendChild(row);
+            li.appendChild(badge);
+
             li.onclick = () => {
               localStorage.setItem("chat_with", name);
               location.href = "chat.html";
@@ -143,18 +207,14 @@ li.appendChild(badge); // right side: unread badge
       });
     }
 
-    function addFriend() {
-      const name = document.getElementById("friendName").value.trim();
-      if (!name || name === me) return alert("Invalid name");
-
-      db.ref("users/" + name).once("value").then(snap => {
-        if (!snap.exists()) return alert("User not found");
-        db.ref("friends/" + me + "/" + name).set(true);
-        db.ref("friends/" + name + "/" + me).set(true);
-        document.getElementById("friendName").value = "";
-      });
-    }
-
     renderChatList();
-  </script></body>
+
+    // Load my current status into input
+    db.ref("users/" + me + "/status_message").once("value").then(s => {
+      if (s.exists()) {
+        document.getElementById("myStatus").value = s.val();
+      }
+    });
+  </script>
+</body>
 </html>
