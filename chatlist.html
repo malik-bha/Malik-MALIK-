@@ -6,13 +6,13 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
   <style>
-    body { margin: 0; font-family: sans-serif; background: #ece5dd; }
-    header { background: #075E54; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-    header span { font-size: 18px; }
-    #logoutBtn { background: red; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
-    #add-friend { padding: 10px; background: white; display: flex; }
-    #add-friend input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ccc; }
-    #add-friend button { margin-left: 10px; padding: 10px 20px; border: none; background: #128c7e; color: white; border-radius: 20px; }
+    body { margin: 0; font-family: sans-serif; background: blanchedalmond; }
+    header { background: burlywood; color: black; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+    header span { font-size: 26px; }
+    #logoutBtn { background: black; color: yellow; border: none; padding: 9px 15px; border-radius: 5px; cursor: pointer; }
+    #add-friend { padding: 10px; background: black; display: flex; }
+    #add-friend input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid yellowgreen; }
+    #add-friend button { margin-left: 10px; padding: 10px 20px; border: none; background: #128c7e; color: greenyellow; border-radius: 20px; }
     .chat-list { padding: 0; list-style: none; margin: 0; }
     .chat-list li { background: white; padding: 15px; border-bottom: 1px solid #ddd; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     .chat-list li:hover { background: #f0f0f0; }
@@ -20,18 +20,18 @@
     .online { background-color: green; }
     .offline { background-color: red; }
     .badge {
-  background: #128c7e;
+  background: blue;
   color: white;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 13px;
   margin-left: auto;
 }
   </style>
 </head>
 <body>
   <header>
-    <span>ID NAME: <b id="username"></b></span>
+    <span>👤  <b id="username"></b></span>
     <button id="logoutBtn" onclick="logout()">Logout</button>
   </header>  <div id="add-friend">
     <input type="text" id="friendName" placeholder="Enter friend's name" />
@@ -59,7 +59,7 @@
       localStorage.removeItem("chat_name");
       localStorage.removeItem("chat_pass");
       localStorage.removeItem("chat_with");
-      location.href = "index.html";
+      location.href = "malik.html";
     }
 
     const listEl = document.getElementById("chatList");
@@ -100,6 +100,9 @@ db.ref("status/" + name).on("value", s => {
 const label = document.createElement("span");
 label.innerText = name;
 label.style.marginLeft = "10px";
+label.style.color = "black";
+label.style.fontSize = "18px";
+label.style.fontWeight = "bold";
 
 const badge = document.createElement("span");
 badge.className = "badge";
