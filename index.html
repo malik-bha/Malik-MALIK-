@@ -1,259 +1,111 @@
 <!DOCTYPE html>
-<html lang="ur" dir="rtl">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>نماز کے اوقات</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">
+  <title>Login or Signup</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
   <style>
-    body {
-      font-family: 'Noto Nastaliq Urdu', serif;
-      background-color: #f0f0f0;
-      padding: 20px;
-      text-align: center;
-      overflow: hidden;
-    }
-
-    #clock {
-      width: 220px;
-      height: 220px;
-      margin: auto;
-      display: block;
-    }
-
-    .prayers {
-      margin-top: 20px;
-      font-size: 20px;
-    }
-
-    .prayer {
-      margin-bottom: 8px;
-    }
-
-    #editBtn {
-      margin-top: 20px;
-      font-size: 18px;
-      padding: 6px 14px;
-      cursor: pointer;
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 999;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(0, 0, 0, 0.4);
-      justify-content: center;
-      align-items: center;
-    }
-
-    .modal-content {
-      background-color: white;
-      padding: 20px;
-      border-radius: 10px;
-      text-align: right;
-      width: 300px;
-    }
-
-    .modal-content input {
-      width: 100%;
-      font-size: 16px;
-      margin-bottom: 10px;
-    }
-
-    .modal-content button {
-      font-size: 16px;
-      padding: 6px 12px;
-      cursor: pointer;
-    }
-    
-    #date {
-  font-size: 22px;
-  margin-top: 10px;
-  font-weight: bold;
-      
-    }
+    body { font-family: sans-serif; margin: 0; background: #ece5dd; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .login-box { background: white; padding: 20px; border-radius: 10px; width: 300px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .login-box h2 { margin: 0 0 20px; text-align: center; }
+    .login-box input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; }
+    .login-box button { width: 48%; padding: 10px; background: #128c7e; color: white; border: none; border-radius: 5px; margin: 1%; }
+    .btns { display: flex; justify-content: space-between; }
   </style>
 </head>
 <body>
 
-<canvas id="clock" width="220" height="220"></canvas>
-<div id="date" style="margin-top: 20px;"></div>
-<div class="prayers" id="prayerTimes">
-  <div class="prayer">🕋 فجر: <span id="fajrTime">---</span></div>
-  <div class="prayer">☀️ ظہر: <span id="zuhrTime">---</span></div>
-  <div class="prayer">🌇 عصر: <span id="asrTime">---</span></div>
-  <div class="prayer">🌆 مغرب: <span id="maghribTime">---</span></div>
-  <div class="prayer">🌃 عشاء: <span id="ishaTime">---</span></div>
-</div>
-
-<button id="editBtn">📝 اوقات تبدیل کریں</button>
-
-<!-- Modal Popup -->
-<div class="modal" id="modal">
-  <div class="modal-content">
-    <label>فجر:</label><input type="time" id="fajrInput">
-    <label>ظہر:</label><input type="time" id="zuhrInput">
-    <label>عصر:</label><input type="time" id="asrInput">
-    <label>مغرب:</label><input type="time" id="maghribInput">
-    <label>عشاء:</label><input type="time" id="ishaInput">
-    <button onclick="saveTimes()">💾 محفوظ کریں</button>
+  <!-- Login Box HTML -->
+<div class="login-box" id="login-box">
+  <h2>Login or Signup</h2>
+  <input type="text" id="name" placeholder="Name" />
+  <input type="password" id="password" placeholder="Password" />
+  <div class="btns">
+    <button onclick="login()">Login</button>
+    <button onclick="signup()">Signup</button>
   </div>
 </div>
-  
-<h2 style="font-size: 13px;"> .If you face any issue, clear the app's data </h2>
+
+<!-- Logging... Message -->
+<div class="login-box" id="autologin-box" style="display: none; text-align: center;">
+  <h2>Logging in 3 Seconds..</h2>
+</div>
+  </div>
 
   <script>
-  const canvas = document.getElementById("clock");
-  const ctx = canvas.getContext("2d");
-  const radius = canvas.height / 2;
-  ctx.translate(radius, radius);
-  
-  let numberPositions = [];
-  
-  function drawClock() {
-    drawFace(ctx, radius);
-    drawNumbers(ctx, radius);
-    drawTime(ctx, radius);
-  }
-  
-  function drawFace(ctx, radius) {
-    ctx.beginPath();
-    ctx.arc(0, 0, radius * 0.95, 0, 2 * Math.PI);
-    ctx.fillStyle = "white";
-    ctx.fill();
-    ctx.strokeStyle = "Black";
-    ctx.lineWidth = radius * 0.02;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(0, 0, radius * 0.06, 0, 2 * Math.PI);
-    ctx.fillStyle = "black";
-    ctx.fill();
-  }
-  
-  function drawNumbers(ctx, radius) {
-    ctx.font = radius * 0.15 + "px Arial";
-    ctx.textBaseline = "middle";
-    ctx.textAlign = "center";
-    numberPositions = [];
-    
-    for (let num = 1; num <= 12; num++) {
-      const ang = num * Math.PI / 6;
-      const x = Math.cos(ang - Math.PI / 2) * radius * 0.85;
-      const y = Math.sin(ang - Math.PI / 2) * radius * 0.85;
-      numberPositions.push({ num, x, y });
-      ctx.fillText(num.toString(), x, y);
-    }
-  }
-  
-  function drawTime(ctx, radius) {
-    const now = new Date();
-    let hour = now.getHours();
-    let minute = now.getMinutes();
-    let second = now.getSeconds();
-    hour %= 12;
-    hour = (hour * Math.PI / 6) + (minute * Math.PI / (6 * 60)) + (second * Math.PI / (360 * 60));
-    drawHand(ctx, hour, radius * 0.5, radius * 0.05);
-    minute = (minute * Math.PI / 30) + (second * Math.PI / (30 * 60));
-    drawHand(ctx, minute, radius * 0.65, radius * 0.06);
-    second = second * Math.PI / 30;
-    drawHand(ctx, second, radius * 0.7, radius * 0.02, "red");
-  }
-  
-  function drawHand(ctx, pos, length, width, color = "black") {
-    ctx.beginPath();
-    ctx.lineWidth = width;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = color;
-    ctx.moveTo(0, 0);
-    ctx.rotate(pos);
-    ctx.lineTo(0, -length);
-    ctx.stroke();
-    ctx.rotate(-pos);
-  }
-  
-  setInterval(drawClock, 1000);
-  
-  function updateDate() {
-    const dateElement = document.getElementById("date");
-    const now = new Date();
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const formattedDate = now.toLocaleDateString('ur-PK', options);
-    dateElement.innerText = formattedDate;
-  }
-  
-  updateDate();
-  setInterval(updateDate, 60000);
-  
-  let clickSequence = "";
-  canvas.onclick = function(e) {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left - radius;
-    const y = e.clientY - rect.top - radius;
-    
-    for (let i = 0; i < numberPositions.length; i++) {
-      const { num, x: nx, y: ny } = numberPositions[i];
-      const dx = x - nx;
-      const dy = y - ny;
-      if (Math.sqrt(dx * dx + dy * dy) < 15) {
-        clickSequence += num.toString();
-        if (clickSequence.length > 7) clickSequence = clickSequence.slice(-7);
-        if (clickSequence === "2126131") {
-          window.location.href = "malik.html";
-        }
-        break;
-      }
-    }
-  };
-  
-  // 🕌 نماز وقت محفوظ کرنا
-  const modal = document.getElementById("modal");
-  const editBtn = document.getElementById("editBtn");
-  
-  editBtn.addEventListener("click", () => {
-    modal.style.display = "flex";
-  });
-  
-  function saveTimes() {
-    const times = {
-      fajr: document.getElementById("fajrInput").value,
-      zuhr: document.getElementById("zuhrInput").value,
-      asr: document.getElementById("asrInput").value,
-      maghrib: document.getElementById("maghribInput").value,
-      isha: document.getElementById("ishaInput").value
+    const firebaseConfig = {
+      apiKey: "AIzaSyClb5C0c2JL-D4555yST-mwHBeUE4H2nhY",
+      authDomain: "malik-6f6b3.firebaseapp.com",
+      databaseURL: "https://malik-6f6b3-default-rtdb.firebaseio.com",
+      projectId: "malik-6f6b3",
+      storageBucket: "malik-6f6b3.appspot.com",
+      messagingSenderId: "784331899173",
+      appId: "1:784331899173:web:4cf46dcf1621f40a6f9acc"
     };
-    
-    localStorage.setItem("prayerTimes", JSON.stringify(times)); // ✅ محفوظ
-    
-    document.getElementById("fajrTime").innerText = times.fajr;
-    document.getElementById("zuhrTime").innerText = times.zuhr;
-    document.getElementById("asrTime").innerText = times.asr;
-    document.getElementById("maghribTime").innerText = times.maghrib;
-    document.getElementById("ishaTime").innerText = times.isha;
-    
-    modal.style.display = "none";
-  }
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // 🔁 Auto redirect if already logged in
+    const savedName = localStorage.getItem("chat_name");
+const savedPass = localStorage.getItem("chat_pass");
+if (savedName && savedPass) {
+  document.getElementById("login-box").style.display = "none";
+  document.getElementById("autologin-box").style.display = "block";
   
-  // 🔁 صفحہ ری لوڈ ہونے پر وقت لوڈ کرو
-  window.addEventListener("load", () => {
-    const stored = localStorage.getItem("prayerTimes");
-    if (stored) {
-      const times = JSON.parse(stored);
-      document.getElementById("fajrTime").innerText = times.fajr || "";
-      document.getElementById("zuhrTime").innerText = times.zuhr || "";
-      document.getElementById("asrTime").innerText = times.asr || "";
-      document.getElementById("maghribTime").innerText = times.maghrib || "";
-      document.getElementById("ishaTime").innerText = times.isha || "";
+  db.ref("users/" + savedName).once("value").then(snapshot => {
+    if (snapshot.exists() && snapshot.val().password === savedPass) {
+      setTimeout(() => {
+        location.href = "chatlist.html";
+      }, 1000); // تھوڑا delay تاکہ user کو message نظر آئے
+    } else {
+      document.getElementById("login-box").style.display = "block";
+      document.getElementById("autologin-box").style.display = "none";
     }
   });
-  
-  // بند کرنے کے لیے باہر کلک پر
-  window.onclick = function(event) {
-    if (event.target == modal) {
-      modal.style.display = "none";
+}
+
+    function login() {
+      const name = document.getElementById("name").value.trim();
+      const pass = document.getElementById("password").value.trim();
+
+      if (!name || !pass) return alert("Please enter both fields.");
+
+      db.ref("users/" + name).once("value").then(snapshot => {
+        if (snapshot.exists()) {
+          if (snapshot.val().password === pass) {
+            localStorage.setItem("chat_name", name);
+            localStorage.setItem("chat_pass", pass);
+            location.href = "chatlist.html";
+          } else {
+            alert("Incorrect password");
+          }
+        } else {
+          alert("User not found. Please signup.");
+        }
+      });
     }
-  };
-</script>
+
+    function signup() {
+      const name = document.getElementById("name").value.trim();
+      const pass = document.getElementById("password").value.trim();
+
+      if (!name || !pass) return alert("Please enter both fields.");
+
+      db.ref("users/" + name).once("value").then(snapshot => {
+        if (snapshot.exists()) {
+          alert("User already exists. Please login.");
+        } else {
+          db.ref("users/" + name).set({ password: pass });
+          localStorage.setItem("chat_name", name);
+          localStorage.setItem("chat_pass", pass);
+          alert("Signup successful! Redirecting...");
+          location.href = "chatlist.html";
+        }
+      });
+    }
+  </script>
 
 </body>
 </html>
