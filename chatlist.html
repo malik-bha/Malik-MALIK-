@@ -68,7 +68,7 @@
 
     const me = localStorage.getItem("chat_name");
     const pass = localStorage.getItem("chat_pass");
-    if (!me || !pass) location.href = "malik.html";
+    if (!me || !pass) location.href = "index.html";
 
     document.getElementById("username").innerText = me;
 
@@ -76,7 +76,7 @@
       localStorage.removeItem("chat_name");
       localStorage.removeItem("chat_pass");
       localStorage.removeItem("chat_with");
-      location.href = "malik.html";
+      location.href = "index.html";
     }
 
     function updateStatus() {
